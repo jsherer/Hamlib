@@ -24,9 +24,13 @@
 #ifndef _RIG_H
 #define _RIG_H 1
 
+// cppcheck-suppress *
 #include <stdio.h>
+// cppcheck-suppress *
 #include <stdarg.h>
+// cppcheck-suppress *
 #include <inttypes.h>
+// cppcheck-suppress *
 #include <time.h>
 
 /* Rig list is in a separate file so as not to mess up w/ this one */
@@ -117,24 +121,24 @@ extern HAMLIB_EXPORT_VAR(const char *) hamlib_copyright2;
  * of rig_errcode_e definitions in case of error, or 0 when successful.
  */
 enum rig_errcode_e {
-    RIG_OK = 0,     /*!< No error, operation completed successfully */
-    RIG_EINVAL,     /*!< invalid parameter */
-    RIG_ECONF,      /*!< invalid configuration (serial,..) */
-    RIG_ENOMEM,     /*!< memory shortage */
-    RIG_ENIMPL,     /*!< function not implemented, but will be */
-    RIG_ETIMEOUT,   /*!< communication timed out */
-    RIG_EIO,        /*!< IO error, including open failed */
-    RIG_EINTERNAL,  /*!< Internal Hamlib error, huh! */
-    RIG_EPROTO,     /*!< Protocol error */
-    RIG_ERJCTED,    /*!< Command rejected by the rig */
-    RIG_ETRUNC,     /*!< Command performed, but arg truncated */
-    RIG_ENAVAIL,    /*!< function not available */
-    RIG_ENTARGET,   /*!< VFO not targetable */
-    RIG_BUSERROR,   /*!< Error talking on the bus */
-    RIG_BUSBUSY,    /*!< Collision on the bus */
-    RIG_EARG,       /*!< NULL RIG handle or any invalid pointer parameter in get arg */
-    RIG_EVFO,       /*!< Invalid VFO */
-    RIG_EDOM        /*!< Argument out of domain of func */
+    RIG_OK = 0,     /*!< 0 No error, operation completed successfully */
+    RIG_EINVAL,     /*!< 1 invalid parameter */
+    RIG_ECONF,      /*!< 2 invalid configuration (serial,..) */
+    RIG_ENOMEM,     /*!< 3 memory shortage */
+    RIG_ENIMPL,     /*!< 4 function not implemented, but will be */
+    RIG_ETIMEOUT,   /*!< 5 communication timed out */
+    RIG_EIO,        /*!< 6 IO error, including open failed */
+    RIG_EINTERNAL,  /*!< 7 Internal Hamlib error, huh! */
+    RIG_EPROTO,     /*!< 8 Protocol error */
+    RIG_ERJCTED,    /*!< 9 Command rejected by the rig */
+    RIG_ETRUNC,     /*!< 10 Command performed, but arg truncated */
+    RIG_ENAVAIL,    /*!< 11 Function not available */
+    RIG_ENTARGET,   /*!< 12 VFO not targetable */
+    RIG_BUSERROR,   /*!< 13 Error talking on the bus */
+    RIG_BUSBUSY,    /*!< 14 Collision on the bus */
+    RIG_EARG,       /*!< 15 NULL RIG handle or any invalid pointer parameter in get arg */
+    RIG_EVFO,       /*!< 16 Invalid VFO */
+    RIG_EDOM        /*!< 17 Argument out of domain of func */
 };
 
 /**
@@ -467,7 +471,20 @@ typedef unsigned int vfo_t;
 #define RIG_TARGETABLE_FUNC (1<<4)
 #define RIG_TARGETABLE_ALL  0x7fffffff
 //! @endcond
-
+//
+//
+// Newer Icoms like the 9700 and 910 have VFOA/B on both Main & Sub
+// Compared to older rigs which have one or the other
+// So we need to distinguish between them
+//! @cond Doxygen_Suppress
+#define VFO_HAS_A_B ((rig->state.vfo_list & (RIG_VFO_A|RIG_VFO_B)) == (RIG_VFO_A|RIG_VFO_B))
+#define VFO_HAS_MAIN_SUB ((rig->state.vfo_list & (RIG_VFO_MAIN|RIG_VFO_SUB)) == (RIG_VFO_MAIN|RIG_VFO_SUB))
+#define VFO_HAS_MAIN_SUB_ONLY ((!VFO_HAS_A_B) & VFO_HAS_MAIN_SUB)
+#define VFO_HAS_MAIN_SUB_A_B_ONLY (VFO_HAS_A_B & VFO_HAS_MAIN_SUB)
+#define VFO_HAS_A_B_ONLY (VFO_HAS_A_B & (!VFO_HAS_MAIN_SUB))
+#define VFO_DUAL (RIG_VFO_MAIN_A|RIG_VFO_MAIN_B|RIG_VFO_SUB_A|RIG_VFO_SUB_B)
+#define VFO_HAS_DUAL ((rig->state.vfo_list & VFO_DUAL == VFO_DUAL)
+//! @endcond
 
 /**
  * \brief Macro for bandpass to be set to normal
@@ -863,6 +880,31 @@ enum rig_level_e {
     RIG_LEVEL_NOTCHF_RAW =    CONSTANT_64BIT_FLAG(36),      /*!< \c NOTCHF_RAW -- Notch Freq., arg float [0.0 ... 1.0] */
     RIG_LEVEL_MONITOR_GAIN =  CONSTANT_64BIT_FLAG(37),      /*!< \c MONITOR_GAIN -- Monitor gain (level for monitoring of transmitted audio), arg float [0.0 ... 1.0] */
     RIG_LEVEL_NB =            CONSTANT_64BIT_FLAG(38),      /*!< \c NB -- Noise Blanker level, arg float [0.0 ... 1.0] */
+    RIG_LEVEL_39 =            CONSTANT_64BIT_FLAG(39),      /*!< \c Future use */
+    RIG_LEVEL_40 =            CONSTANT_64BIT_FLAG(40),      /*!< \c Future use */
+    RIG_LEVEL_41 =            CONSTANT_64BIT_FLAG(41),      /*!< \c Future use */
+    RIG_LEVEL_42 =            CONSTANT_64BIT_FLAG(42),      /*!< \c Future use */
+    RIG_LEVEL_43 =            CONSTANT_64BIT_FLAG(43),      /*!< \c Future use */
+    RIG_LEVEL_44 =            CONSTANT_64BIT_FLAG(44),      /*!< \c Future use */
+    RIG_LEVEL_45 =            CONSTANT_64BIT_FLAG(45),      /*!< \c Future use */
+    RIG_LEVEL_46 =            CONSTANT_64BIT_FLAG(46),      /*!< \c Future use */
+    RIG_LEVEL_47 =            CONSTANT_64BIT_FLAG(47),      /*!< \c Future use */
+    RIG_LEVEL_48 =            CONSTANT_64BIT_FLAG(48),      /*!< \c Future use */
+    RIG_LEVEL_49 =            CONSTANT_64BIT_FLAG(49),      /*!< \c Future use */
+    RIG_LEVEL_50 =            CONSTANT_64BIT_FLAG(50),      /*!< \c Future use */
+    RIG_LEVEL_51 =            CONSTANT_64BIT_FLAG(51),      /*!< \c Future use */
+    RIG_LEVEL_52 =            CONSTANT_64BIT_FLAG(52),      /*!< \c Future use */
+    RIG_LEVEL_53 =            CONSTANT_64BIT_FLAG(53),      /*!< \c Future use */
+    RIG_LEVEL_54 =            CONSTANT_64BIT_FLAG(54),      /*!< \c Future use */
+    RIG_LEVEL_55 =            CONSTANT_64BIT_FLAG(55),      /*!< \c Future use */
+    RIG_LEVEL_56 =            CONSTANT_64BIT_FLAG(56),      /*!< \c Future use */
+    RIG_LEVEL_57 =            CONSTANT_64BIT_FLAG(57),      /*!< \c Future use */
+    RIG_LEVEL_58 =            CONSTANT_64BIT_FLAG(58),      /*!< \c Future use */
+    RIG_LEVEL_59 =            CONSTANT_64BIT_FLAG(59),      /*!< \c Future use */
+    RIG_LEVEL_60 =            CONSTANT_64BIT_FLAG(60),      /*!< \c Future use */
+    RIG_LEVEL_61 =            CONSTANT_64BIT_FLAG(61),      /*!< \c Future use */
+    RIG_LEVEL_62 =            CONSTANT_64BIT_FLAG(62),      /*!< \c Future use */
+    RIG_LEVEL_63 =            CONSTANT_64BIT_FLAG(63),      /*!< \c Future use */
 };
 
 //! @cond Doxygen_Suppress
@@ -1762,7 +1804,7 @@ struct rig_caps {
     int (*decode_event)(RIG *rig);
 
     int (*set_channel)(RIG *rig, const channel_t *chan);
-    int (*get_channel)(RIG *rig, channel_t *chan);
+    int (*get_channel)(RIG *rig, channel_t *chan, int read_only);
 
     const char * (*get_info)(RIG *rig);
 
@@ -1777,6 +1819,8 @@ struct rig_caps {
                           chan_cb_t chan_cb,
                           confval_cb_t parm_cb,
                           rig_ptr_t);
+
+    int (*set_vfo_opt)(RIG *rig, int status); // only for Net Rigctl device
 
     const char *clone_combo_set;    /*!< String describing key combination to enter load cloning mode */
     const char *clone_combo_get;    /*!< String describing key combination to enter save cloning mode */
@@ -1854,6 +1898,58 @@ typedef struct hamlib_port {
 typedef hamlib_port_t port_t;
 #endif
 
+#define ELAPSED_GET 0
+#define ELAPSED_SET 1
+#define ELAPSED_INVALIDATE 2
+
+typedef enum {
+    CACHE_ALL, // to set all cache timeouts at once
+    CACHE_VFO,
+    CACHE_FREQ,
+    CACHE_MODE,
+    CACHE_PTT,
+    CACHE_SPLIT
+} cache_t;
+
+/**
+ * \brief Rig cache data
+ * 
+ * This struct contains all the items we cache at the highest level
+ */
+struct rig_cache {
+    int timeout_ms;  // the cache timeout for invalidating itself
+    vfo_t vfo;
+    freq_t freq; // to be deprecated
+    // othe abstraction here is based on dual vfo rigs and mapped to all others
+    // So we have four possible states of rig
+    // MainA, MainB, SubA, SubB
+    // Main is the Main VFO and Sub is for the 2nd VFO
+    // Most rigs have MainA and MainB
+    // Dual VFO rigs can have SubA and SubB too
+    // For dual VFO rigs simplex opeations are all done on MainA/MainB -- ergo this abstraction
+    freq_t freqMainA; // VFO_A, VFO_MAIN, and VFO_MAINA
+    freq_t freqMainB; // VFO_B, VFO_SUB, and VFO_MAINB
+    freq_t freqSubA;  // VFO_SUBA
+    freq_t freqSubB;  // VFO_SUBB
+    rmode_t mode;
+    pbwidth_t width;
+    ptt_t ptt;
+    split_t split;
+    vfo_t split_vfo;  // split caches two values
+    struct timespec time_freq;
+    struct timespec time_freqMainA;
+    struct timespec time_freqMainB;
+    struct timespec time_freqSubA;
+    struct timespec time_freqSubB;
+    struct timespec time_vfo;
+    struct timespec time_mode;
+    struct timespec time_ptt;
+    struct timespec time_split;
+    vfo_t vfo_freq; // last vfo cached
+    vfo_t vfo_mode; // last vfo cached
+    int satmode; // if rig is in satellite mode
+};
+
 
 /**
  * \brief Rig state containing live data and customized fields.
@@ -1930,6 +2026,8 @@ struct rig_state {
     freq_t lo_freq;             /*!< Local oscillator frequency of any transverter */
     time_t twiddle_time;        /*!< time when vfo twiddling was detected */
     int twiddle_timeout;        /*!< timeout to resume from twiddling */
+    struct rig_cache cache;
+    int vfo_opt;                /*!< Is -o switch turned on? */
 };
 
 //! @cond Doxygen_Suppress
@@ -2424,7 +2522,7 @@ rig_set_channel HAMLIB_PARAMS((RIG *rig,
                                const channel_t *chan)); /* mem */
 extern HAMLIB_EXPORT(int)
 rig_get_channel HAMLIB_PARAMS((RIG *rig,
-                               channel_t *chan));
+                               channel_t *chan, int read_only));
 
 extern HAMLIB_EXPORT(int)
 rig_set_chan_all HAMLIB_PARAMS((RIG *rig,
@@ -2638,6 +2736,12 @@ extern HAMLIB_EXPORT(const char *) rig_copyright HAMLIB_PARAMS(());
 
 extern HAMLIB_EXPORT(void) rig_no_restore_ai();
 
+extern HAMLIB_EXPORT(int) rig_get_cache_timeout_ms(RIG *rig, cache_t selection);
+extern HAMLIB_EXPORT(int) rig_set_cache_timeout_ms(RIG *rig, cache_t selection, int ms);
+
+extern HAMLIB_EXPORT(int) rig_set_vfo_opt(RIG *rig, int status);
+
+// cppcheck-suppress *
 #include <unistd.h>
 extern HAMLIB_EXPORT(int) hl_usleep(useconds_t msec);
 

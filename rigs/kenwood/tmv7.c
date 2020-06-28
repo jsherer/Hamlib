@@ -87,7 +87,7 @@ static int tmv7_decode_event(RIG *rig);
 static int tmv7_set_vfo(RIG *rig, vfo_t vfo);
 static int tmv7_get_mode(RIG *rig, vfo_t vfo, rmode_t *mode, pbwidth_t *width);
 static int tmv7_get_powerstat(RIG *rig, powerstat_t *status);
-static int tmv7_get_channel(RIG *rig, channel_t *chan);
+static int tmv7_get_channel(RIG *rig, channel_t *chan, int read_only);
 static int tmv7_set_channel(RIG *rig, const channel_t *chan);
 
 /*
@@ -496,7 +496,7 @@ int tmv7_get_powerstat(RIG *rig, powerstat_t *status)
 
 
 /* --------------------------------------------------------------------- */
-int tmv7_get_channel(RIG *rig, channel_t *chan)
+int tmv7_get_channel(RIG *rig, channel_t *chan, int read_only)
 {
     char membuf[64], ackbuf[ACKBUF_LEN];
     int retval;
@@ -647,6 +647,16 @@ int tmv7_get_channel(RIG *rig, channel_t *chan)
         }
 
         memcpy(chan->channel_desc, &ackbuf[10], 7);
+    }
+
+    if (!read_only)
+    {
+        // Set rig to channel values
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: please contact hamlib mailing list to implement this\n", __func__);
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: need to know if rig updates when channel read or not\n", __func__);
+        return -RIG_ENIMPL;
     }
 
     return RIG_OK;

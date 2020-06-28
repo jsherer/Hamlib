@@ -1935,7 +1935,7 @@ int th_vfo_op(RIG *rig, vfo_t vfo, vfo_op_t op)
 /* get and set channel tested on thg71&thf7e    */
 /* must work on other th and tm kenwood rigs  */
 /* --------------------------------------------------------------------- */
-int th_get_channel(RIG *rig, channel_t *chan)
+int th_get_channel(RIG *rig, channel_t *chan, int read_only)
 {
     char membuf[64], ackbuf[ACKBUF_LEN];
     int retval;
@@ -2224,6 +2224,16 @@ int th_get_channel(RIG *rig, channel_t *chan)
 
         strncpy(chan->channel_desc, ackbuf + strlen(membuf) + 1, ack_len);
         chan->channel_desc[ack_len] = '\0';
+    }
+
+    if (!read_only)
+    {
+        // Set rig to channel values
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: please contact hamlib mailing list to implement this\n", __func__);
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: need to know if rig updates when channel read or not\n", __func__);
+        return -RIG_ENIMPL;
     }
 
     return RIG_OK;

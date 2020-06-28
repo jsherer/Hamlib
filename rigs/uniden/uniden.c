@@ -561,7 +561,7 @@ int uniden_get_mem(RIG *rig, vfo_t vfo, int *ch)
  * uniden_get_channel
  * Assumes rig!=NULL
  */
-int uniden_get_channel(RIG *rig, channel_t *chan)
+int uniden_get_channel(RIG *rig, channel_t *chan, int read_only)
 {
     char cmdbuf[BUFSZ], membuf[BUFSZ];
     size_t cmd_len = BUFSZ, mem_len = BUFSZ;
@@ -639,6 +639,16 @@ int uniden_get_channel(RIG *rig, channel_t *chan)
 
         /*  TA C 001 My Alpha Tag */
         strncpy(chan->channel_desc, membuf + 9, rig->caps->chan_desc_sz);
+    }
+
+    if (!read_only)
+    {
+        // Set rig to channel values
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: please contact hamlib mailing list to implement this\n", __func__);
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: need to know if rig updates when channel read or not\n", __func__);
+        return -RIG_ENIMPL;
     }
 
     return RIG_OK;

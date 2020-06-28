@@ -507,13 +507,13 @@ const char *HAMLIB_API rig_strvfo(vfo_t vfo)
     int i;
 
     //a bit too verbose
-    rig_debug(RIG_DEBUG_TRACE, "%s called\n", __func__);
+    //rig_debug(RIG_DEBUG_TRACE, "%s called\n", __func__);
 
     for (i = 0 ; vfo_str[i].str[0] != '\0'; i++)
     {
         if (vfo == vfo_str[i].vfo)
         {
-            rig_debug(RIG_DEBUG_TRACE, "%s returning %s\n", __func__, vfo_str[i].str);
+            //rig_debug(RIG_DEBUG_TRACE, "%s returning %s\n", __func__, vfo_str[i].str);
             return vfo_str[i].str;
         }
     }
@@ -1252,6 +1252,72 @@ void HAMLIB_API rig_no_restore_ai()
 
     no_restore_ai = -1;
 }
+
+//! @cond Doxygen_Suppress
+double HAMLIB_API elapsed_ms(struct timespec *start, int option)
+{
+    // If option then we are starting the timing, else we get elapsed
+    struct timespec stop;
+    double elapsed_msec;
+
+    if (option == ELAPSED_SET)
+    {
+        start->tv_sec = start->tv_nsec = 0;
+    }
+
+    rig_debug(RIG_DEBUG_TRACE, "%s: start = %ld,%ld\n", __func__,
+              (long)start->tv_sec, (long)start->tv_nsec);
+
+
+    switch (option)
+    {
+    case ELAPSED_GET:
+        if (start->tv_nsec == 0)   // if we haven't done SET yet
+        {
+            clock_gettime(CLOCK_REALTIME, start);
+            return 1000 * 1000;
+        }
+
+        clock_gettime(CLOCK_REALTIME, &stop);
+        break;
+
+    case ELAPSED_SET:
+        clock_gettime(CLOCK_REALTIME, start);
+        rig_debug(RIG_DEBUG_TRACE, "%s: after gettime, start = %ld,%ld\n", __func__,
+                  (long)start->tv_sec, (long)start->tv_nsec);
+        return 999 * 1000; // so we can tell the difference in debug where we came from
+        break;
+
+    case ELAPSED_INVALIDATE:
+        clock_gettime(CLOCK_REALTIME, start);
+        start->tv_sec -= 3600;
+        break;
+    }
+
+    elapsed_msec = ((stop.tv_sec - start->tv_sec) + (stop.tv_nsec / 1e9 -
+                    start->tv_nsec / 1e9)) * 1e3;
+
+    rig_debug(RIG_DEBUG_TRACE, "%s: elapsed_msecs=%g\n", __func__, elapsed_msec);
+
+    if (elapsed_msec < 0 || option == ELAPSED_INVALIDATE) { return 1000000; }
+
+    return elapsed_msec;
+}
+
+int HAMLIB_API rig_get_cache_timeout_ms(RIG *rig, cache_t selection)
+{
+    rig_debug(RIG_DEBUG_TRACE, "%s: called selection=%d\n", __func__, selection);
+    return rig->state.cache.timeout_ms;
+}
+
+int HAMLIB_API rig_set_cache_timeout_ms(RIG *rig, cache_t selection, int ms)
+{
+    rig_debug(RIG_DEBUG_TRACE, "%s: called selection=%d, ms=%d\n", __func__,
+              selection, ms);
+    rig->state.cache.timeout_ms = ms;
+    return RIG_OK;
+}
+
 //! @endcond
 
 /** @} */

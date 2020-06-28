@@ -64,7 +64,7 @@ static int pihpsdr_open(RIG *rig);
 static int pihpsdr_get_level(RIG *rig, vfo_t vfo, setting_t level,
                              value_t *val);
 static int pihpsdr_set_level(RIG *rig, vfo_t vfo, setting_t level, value_t val);
-static int pihspdr_get_channel(RIG *rig, channel_t *chan);
+static int pihspdr_get_channel(RIG *rig, channel_t *chan, int read_only);
 static int pihspdr_set_channel(RIG *rig, const channel_t *chan);
 
 
@@ -104,15 +104,21 @@ const struct rig_caps pihpsdr_caps =
     .mfg_name =  "OpenHPSDR",
     .version =  BACKEND_VER ".0",
     .copyright =  "LGPL",
-    .status =  RIG_STATUS_BETA,
+    .status =  RIG_STATUS_STABLE,
     .rig_type =  RIG_TYPE_TRANSCEIVER,
     .ptt_type =  RIG_PTT_RIG,
     .dcd_type =  RIG_DCD_RIG,
-    .port_type =  RIG_PORT_NETWORK,
+    .port_type =  RIG_PORT_SERIAL,
+    .serial_rate_min = 4800,
+    .serial_rate_max = 38400,
+    .serial_data_bits = 8,
+    .serial_stop_bits = 1,
+    .serial_parity = RIG_PARITY_NONE,
+    .serial_handshake = RIG_HANDSHAKE_NONE,
     .write_delay =  0,
     .post_write_delay =  50,    /* ms */
-    .timeout =  0,
-    .retry =  0,
+    .timeout =  50,
+    .retry =  1,
     .has_get_func =  PIHPSDR_FUNC_ALL,
     .has_set_func =  PIHPSDR_FUNC_ALL,
     .has_get_level =  PIHPSDR_LEVEL_ALL,
@@ -335,7 +341,7 @@ const struct rig_caps pihpsdr_caps =
 
  */
 
-int pihspdr_get_channel(RIG *rig, channel_t *chan)
+int pihspdr_get_channel(RIG *rig, channel_t *chan, int read_only)
 {
     int err;
     int tmp;
@@ -558,6 +564,16 @@ int pihspdr_get_channel(RIG *rig, channel_t *chan)
     else
     {
         chan->split = RIG_SPLIT_ON;
+    }
+
+    if (!read_only)
+    {
+        // Set rig to channel values
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: please contact hamlib mailing list to implement this\n", __func__);
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: need to know if rig updates when channel read or not\n", __func__);
+        return -RIG_ENIMPL;
     }
 
     return RIG_OK;

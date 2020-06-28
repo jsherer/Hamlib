@@ -201,7 +201,7 @@ int prm80_get_freq(RIG *rig, vfo_t vfo, freq_t *freq)
     memset(&chan, 0, sizeof(chan));
     chan.vfo = RIG_VFO_CURR;
 
-    ret = prm80_get_channel(rig, &chan);
+    ret = prm80_get_channel(rig, &chan, 0);
 
     if (ret != RIG_OK)
     {
@@ -246,7 +246,7 @@ int prm80_get_mem(RIG *rig, vfo_t vfo, int *ch)
     memset(&chan, 0, sizeof(chan));
     chan.vfo = RIG_VFO_CURR;
 
-    ret = prm80_get_channel(rig, &chan);
+    ret = prm80_get_channel(rig, &chan, 0);
 
     if (ret != RIG_OK)
     {
@@ -276,7 +276,7 @@ static int hhtoi(const char *p)
  * prm80_get_channel
  * Assumes rig!=NULL
  */
-int prm80_get_channel(RIG *rig, channel_t *chan)
+int prm80_get_channel(RIG *rig, channel_t *chan, int read_only)
 {
     char statebuf[BUFSZ];
     int statebuf_len = BUFSZ;
@@ -328,6 +328,16 @@ int prm80_get_channel(RIG *rig, channel_t *chan)
     chan->freq = ((hhtoi(statebuf + 12) << 8) + hhtoi(statebuf + 14)) * 12500;
     chan->tx_freq = ((hhtoi(statebuf + 16) << 8) + hhtoi(statebuf + 18)) * 12500;
     chan->rptr_offs = chan->tx_freq - chan->freq;
+
+    if (!read_only)
+    {
+        // Set rig to channel values
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: please contact hamlib mailing list to implement this\n", __func__);
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: need to know if rig updates when channel read or not\n", __func__);
+        return -RIG_ENIMPL;
+    }
 
     return RIG_OK;
 }
@@ -421,7 +431,7 @@ int prm80_get_level(RIG *rig, vfo_t vfo, setting_t level, value_t *val)
     memset(&chan, 0, sizeof(chan));
     chan.vfo = RIG_VFO_CURR;
 
-    ret = prm80_get_channel(rig, &chan);
+    ret = prm80_get_channel(rig, &chan, 1);
 
     if (ret != RIG_OK)
     {

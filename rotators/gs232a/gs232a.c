@@ -23,10 +23,15 @@
 #include "config.h"
 #endif
 
+// cppcheck-suppress *
 #include <stdio.h>
+// cppcheck-suppress *
 #include <stdlib.h>
+// cppcheck-suppress *
 #include <string.h>  /* String function definitions */
+// cppcheck-suppress *
 #include <unistd.h>  /* UNIX standard function definitions */
+// cppcheck-suppress *
 #include <math.h>
 
 #include "hamlib/rotator.h"
@@ -64,7 +69,6 @@ gs232a_transaction(ROT *rot, const char *cmdstr,
     struct rot_state *rs;
     int retval;
     int retry_read = 0;
-    char replybuf[BUFSZ];
 
     rs = &rot->state;
 
@@ -82,10 +86,10 @@ transaction_write:
         }
     }
 
-    /* Always read the reply to know whether the cmd went OK */
+    /* If no data requested just return */
     if (!data)
     {
-        data = replybuf;
+        return RIG_OK;
     }
 
     if (!data_len)
@@ -294,7 +298,7 @@ const struct rot_caps gs23_rot_caps =
     ROT_MODEL(ROT_MODEL_GS23),
     .model_name =     "GS-23",
     .mfg_name =       "Yaesu/Kenpro",
-    .version =        "0.2",
+    .version =        "20200424",
     .copyright =      "LGPL",
     .status =         RIG_STATUS_ALPHA,
     .rot_type =       ROT_TYPE_AZEL,

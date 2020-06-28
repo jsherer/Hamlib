@@ -58,7 +58,7 @@
 
 /* prototypes */
 static int ts2000_get_level(RIG *rig, vfo_t vfo, setting_t level, value_t *val);
-static int ts2000_get_channel(RIG *rig, channel_t *chan);
+static int ts2000_get_channel(RIG *rig, channel_t *chan, int read_only);
 static int ts2000_set_channel(RIG *rig, const channel_t *chan);
 
 /*
@@ -368,7 +368,7 @@ const struct rig_caps ts2000_caps =
 
  */
 
-int ts2000_get_channel(RIG *rig, channel_t *chan)
+int ts2000_get_channel(RIG *rig, channel_t *chan, int read_only)
 {
     int err;
     int tmp;
@@ -591,6 +591,16 @@ int ts2000_get_channel(RIG *rig, channel_t *chan)
     else
     {
         chan->split = RIG_SPLIT_ON;
+    }
+
+    if (!read_only)
+    {
+        // Set rig to channel values
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: please contact hamlib mailing list to implement this\n", __func__);
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: need to know if rig updates when channel read or not\n", __func__);
+        return -RIG_ENIMPL;
     }
 
     return RIG_OK;

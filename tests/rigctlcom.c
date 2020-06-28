@@ -33,30 +33,43 @@
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
+// cppcheck-suppress *
 #include <windows.h>
 #endif
 
+// cppcheck-suppress *
 #include <stdio.h>
+// cppcheck-suppress *
 #include <stdlib.h>
+// cppcheck-suppress *
 #include <string.h>
+// cppcheck-suppress *
 #include <unistd.h>
+// cppcheck-suppress *
 #include <ctype.h>
+// cppcheck-suppress *
 #include <errno.h>
+// cppcheck-suppress *
 #include <signal.h>
 
+// cppcheck-suppress *
 #include <getopt.h>
 
+// cppcheck-suppress *
 #include <sys/types.h>
 
 #ifdef HAVE_NETINET_IN_H
+// cppcheck-suppress *
 #  include <netinet/in.h>
 #endif
 
 #ifdef HAVE_ARPA_INET_H
+// cppcheck-suppress *
 #  include <arpa/inet.h>
 #endif
 
 #ifdef HAVE_SYS_SOCKET_H
+// cppcheck-suppress *
 #  include <sys/socket.h>
 #elif HAVE_WS2TCPIP_H
 #  include <ws2tcpip.h>
@@ -691,6 +704,7 @@ static int write_block2(void *func,
  */
 static int handle_ts2000(void *arg)
 {
+    rig_debug(RIG_DEBUG_VERBOSE, "%s: cmd=%s\n", __func__, (char*)arg);
     // Handle all the queries
     if (strcmp(arg, "ID;") == 0)
     {
@@ -739,14 +753,15 @@ static int handle_ts2000(void *arg)
             return retval;
         }
 
-        if (ptt)
+        // we need to know split status -- don't care about the vfo
+        retval = rig_get_split_vfo(my_rig, RIG_VFO_CURR, &split, &vfo);
+
+        if (retval != RIG_OK)
         {
-            retval = rig_get_split_vfo(my_rig, RIG_VFO_CURR, &split, &vfo);
+            return retval;
         }
-        else
-        {
-            retval = rig_get_vfo(my_rig, &vfo);
-        }
+
+        retval = rig_get_vfo(my_rig, &vfo);
 
         if (retval != RIG_OK)
         {

@@ -1240,7 +1240,7 @@ static int parse_chan_line(RIG *rig, channel_t *chan, char *basep,
 }
 
 
-int aor_get_channel(RIG *rig, channel_t *chan)
+int aor_get_channel(RIG *rig, channel_t *chan, int read_only)
 {
     struct aor_priv_caps *priv = (struct aor_priv_caps *)rig->caps->priv;
     char aorcmd[BUFSZ];
@@ -1329,6 +1329,16 @@ int aor_get_channel(RIG *rig, channel_t *chan)
     }
 
     retval = parse_chan_line(rig, chan, chanbuf, mem_caps);
+
+    if (!read_only)
+    {
+        // Set rig to channel values
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: please contact hamlib mailing list to implement this\n", __func__);
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: need to know if rig updates when channel read or not\n", __func__);
+        return -RIG_ENIMPL;
+    }
 
     return retval;
 }

@@ -92,7 +92,7 @@
 }
 
 static int icr75_set_channel(RIG *rig, const channel_t *chan);
-static int icr75_get_channel(RIG *rig, channel_t *chan);
+static int icr75_get_channel(RIG *rig, channel_t *chan, int read_only);
 int icr75_set_parm(RIG *rig, setting_t parm, value_t val);
 int icr75_get_parm(RIG *rig, setting_t parm, value_t *val);
 
@@ -319,7 +319,7 @@ int icr75_set_channel(RIG *rig, const channel_t *chan)
  * Assumes rig!=NULL, rig->state.priv!=NULL, chan!=NULL
  * TODO: still a WIP --SF
  */
-int icr75_get_channel(RIG *rig, channel_t *chan)
+int icr75_get_channel(RIG *rig, channel_t *chan, int read_only)
 {
     struct icom_priv_data *priv;
     struct rig_state *rs;
@@ -414,6 +414,16 @@ int icr75_get_channel(RIG *rig, channel_t *chan)
 
         chan->ant = from_bcd_be(chanbuf + chan_len++, 2);
         strncpy(chan->channel_desc, (char *)(chanbuf + chan_len), 8);
+    }
+
+    if (!read_only)
+    {
+        // Set rig to channel values
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: please contact hamlib mailing list to implement this\n", __func__);
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: need to know if rig updates when channel read or not\n", __func__);
+        return -RIG_ENIMPL;
     }
 
     return RIG_OK;

@@ -255,6 +255,33 @@ int kenwood_transaction(RIG *rig, const char *cmdstr, char *data,
     /* Emulators don't need any post_write_delay */
     if (priv->is_emulation) { rs->rigport.post_write_delay = 0; }
 
+    // if this is an IF cmdstr and not the first time through check cache
+    if (strcmp(cmdstr, "IF") == 0 && priv->cache_start.tv_sec != 0)
+    {
+        int cache_age_ms;
+
+        cache_age_ms = elapsed_ms(&priv->cache_start, 0);
+
+        if (cache_age_ms < 500) // 500ms cache time
+        {
+            rig_debug(RIG_DEBUG_TRACE, "%s: cache hit, age=%dms\n", __func__, cache_age_ms);
+
+            if (data) { strncpy(data, priv->last_if_response, datasize); }
+
+            return RIG_OK;
+        }
+
+        // else we drop through and do the real IF command
+    }
+
+    if (strlen(cmdstr) > 2 || strcmp(cmdstr, "RX") == 0
+            || strcmp(cmdstr, "TX") == 0 || strcmp(cmdstr, "ZZTX") == 0)
+    {
+        // then we must be setting something so we'll invalidate the cache
+        rig_debug(RIG_DEBUG_TRACE, "%s: cache invalidated\n", __func__);
+        priv->cache_start.tv_sec = 0;
+    }
+
     cmdtrm[0] = caps->cmdtrm;
     cmdtrm[1] = '\0';
 
@@ -319,17 +346,30 @@ transaction_write:
     }
 
 transaction_read:
-    /* allow one extra byte for terminator we don't return */
-    len = min(datasize ? datasize + 1 : strlen(priv->verify_cmd) + 13,
+    /* allow room for most any response */
+    len = min(datasize ? datasize + 1 : strlen(priv->verify_cmd) + 32,
               KENWOOD_MAX_BUF_LEN);
     retval = read_string(&rs->rigport, buffer, len, cmdtrm, strlen(cmdtrm));
+    rig_debug(RIG_DEBUG_TRACE, "%s: read_string(len=%d)='%s'\n", __func__,
+              (int)strlen(buffer), buffer);
 
     if (retval < 0)
     {
+        rig_debug(RIG_DEBUG_WARN,
+                  "%s: read_string retval < 0, retval = %d, retry_read=%d, retry=%d\n", __func__,
+                  retval, retry_read, rs->rigport.retry);
+
         // only retry if we expect a response from the command
-        if (datasize && retry_read++ < rs->rigport.retry)
+        if (retry_read++ < rs->rigport.retry)
         {
-            goto transaction_write;
+            if (datasize)
+            {
+                goto transaction_write;
+            }
+            else if (-RIG_ETIMEOUT == retval)
+            {
+                goto transaction_read;
+            }
         }
 
         goto transaction_quit;
@@ -457,6 +497,23 @@ transaction_read:
     }
     else
     {
+        rig_debug(RIG_DEBUG_TRACE, "%s: No data expected, checking %s in %s\n",
+                  __func__,
+                  priv->verify_cmd, buffer);
+
+        // seems some rigs will send back an IF response to RX/TX when it changes the status
+        // normally RX/TX returns nothing when it's a null effect
+        // TS-950SDX is known to behave this way
+        if (strncmp(cmdstr, "RX", 2) == 0 || strncmp(cmdstr, "TX", 2) == 0)
+        {
+            if (strncmp(priv->verify_cmd, "IF", 2) == 0)
+            {
+                rig_debug(RIG_DEBUG_TRACE, "%s: RX/TX got IF response so we're good\n",
+                          __func__);
+                goto transaction_quit;
+            }
+        }
+
         if (priv->verify_cmd[0] != buffer[0]
                 || (priv->verify_cmd[1] && priv->verify_cmd[1] != buffer[1]))
         {
@@ -480,10 +537,20 @@ transaction_read:
     }
 
     retval = RIG_OK;
+    rig_debug(RIG_DEBUG_TRACE, "%s: returning RIG_OK, retval=%d\n", __func__,
+              retval);
 
 transaction_quit:
 
+    // update the cache
+    if (strcmp(cmdstr, "IF") == 0)
+    {
+        elapsed_ms(&priv->cache_start, 1);
+        strncpy(priv->last_if_response, buffer, caps->if_len);
+    }
+
     rs->hold_decode = 0;
+    rig_debug(RIG_DEBUG_TRACE, "%s: returning retval=%d\n", __func__, retval);
     return retval;
 }
 
@@ -545,7 +612,7 @@ int kenwood_safe_transaction(RIG *rig, const char *cmd, char *buf,
                       "%s: wrong answer; len for cmd %s: expected = %d, got %d\n",
                       __func__, cmd, (int)expected, (int)length);
             err =  -RIG_EPROTO;
-            hl_usleep(rig->caps->timeout * 1000);
+            hl_usleep(50 * 1000); // let's do a short wait
         }
     }
     while (err != RIG_OK && ++retry < rig->state.rigport.retry);
@@ -646,12 +713,34 @@ int kenwood_open(RIG *rig)
 
     err = kenwood_get_id(rig, id);
 
+    if (err == RIG_OK)   // some rigs give ID while in standby
+    {
+        powerstat_t powerstat = 0;
+        rig_debug(RIG_DEBUG_TRACE, "%s: got ID so try PS\n", __func__);
+        err = rig_get_powerstat(rig, &powerstat);
+
+        if (err == RIG_OK && powerstat == 0)
+        {
+            rig_debug(RIG_DEBUG_TRACE, "%s: got PS0 so powerup\n", __func__);
+            rig_set_powerstat(rig, 1);
+        }
+
+        err = RIG_OK;  // reset our err back to OK for later checks
+    }
+
     if (err == -RIG_ETIMEOUT)
     {
         // Ensure rig is on
         rig_set_powerstat(rig, 1);
-    }
+        /* Try get id again */
+        err = kenwood_get_id(rig, id);
 
+        if (RIG_OK != err)
+        {
+            rig_debug(RIG_DEBUG_ERR,
+                      "%s: no response to get_id from rig...contintuing anyways.\n", __func__);
+        }
+    }
 
     if (RIG_IS_TS590S)
     {
@@ -685,9 +774,6 @@ int kenwood_open(RIG *rig)
         rig_debug(RIG_DEBUG_TRACE, "%s: found f/w version %s\n", __func__,
                   priv->fw_rev);
     }
-
-    /* get id in buffer, will be null terminated */
-    err = kenwood_get_id(rig, id);
 
     if (!RIG_IS_XG3 && -RIG_ETIMEOUT == err)
     {
@@ -792,7 +878,8 @@ int kenwood_open(RIG *rig)
         // we continue to search for other matching IDs/models
     }
 
-    rig_debug(RIG_DEBUG_ERR, "%s: your rig (%s) did not match but we will continue anyways\n",
+    rig_debug(RIG_DEBUG_ERR,
+              "%s: your rig (%s) did not match but we will continue anyways\n",
               __func__, id);
 
     // we're making this non fatal
@@ -1288,6 +1375,7 @@ int kenwood_get_vfo_if(RIG *rig, vfo_t *vfo)
     {
     case '0':
         *vfo = priv->tx_vfo = split_and_transmitting ? RIG_VFO_B : RIG_VFO_A;
+        if (priv->info[32] == '1') priv->tx_vfo = RIG_VFO_B;
         break;
 
     case '1':
@@ -3730,7 +3818,7 @@ int kenwood_get_mem_if(RIG *rig, vfo_t vfo, int *ch)
     return RIG_OK;
 }
 
-int kenwood_get_channel(RIG *rig, channel_t *chan)
+int kenwood_get_channel(RIG *rig, channel_t *chan, int read_only)
 {
     int err;
     char buf[26];
@@ -3837,6 +3925,16 @@ int kenwood_get_channel(RIG *rig, channel_t *chan)
     else
     {
         chan->split = RIG_SPLIT_ON;
+    }
+
+    if (!read_only)
+    {
+        // Set rig to channel values
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: please contact hamlib mailing list to implement this\n", __func__);
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: need to know if rig updates when channel read or not\n", __func__);
+        return -RIG_ENIMPL;
     }
 
     return RIG_OK;
@@ -4230,6 +4328,7 @@ DECLARE_INITRIG_BACKEND(kenwood)
     rig_register(&k3s_caps);
     rig_register(&kx2_caps);
     rig_register(&kx3_caps);
+    rig_register(&k4_caps);
     rig_register(&xg3_caps);
 
     rig_register(&ts440_caps);
@@ -4256,6 +4355,7 @@ DECLARE_INITRIG_BACKEND(kenwood)
     rig_register(&transfox_caps);
 
     rig_register(&f6k_caps);
+    rig_register(&powersdr_caps);
     rig_register(&pihpsdr_caps);
     rig_register(&ts890s_caps);
     rig_register(&pt8000a_caps);

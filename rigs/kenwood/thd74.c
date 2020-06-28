@@ -1275,7 +1275,7 @@ static int thd74_parse_channel(int kind, const char *buf, channel_t *chan)
     return RIG_OK;
 }
 
-static int thd74_get_channel(RIG *rig, channel_t *chan)
+static int thd74_get_channel(RIG *rig, channel_t *chan, int read_only)
 {
     int retval;
     char buf[72];
@@ -1322,6 +1322,16 @@ static int thd74_get_channel(RIG *rig, channel_t *chan)
         }
 
         return thd74_parse_channel(0, buf, chan);
+    }
+
+    if (!read_only)
+    {
+        // Set rig to channel values
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: please contact hamlib mailing list to implement this\n", __func__);
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: need to know if rig updates when channel read or not\n", __func__);
+        return -RIG_ENIMPL;
     }
 
     return RIG_OK;

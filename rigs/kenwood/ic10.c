@@ -634,7 +634,7 @@ int ic10_set_mem(RIG *rig, vfo_t vfo, int ch)
 }
 
 
-int ic10_get_channel(RIG *rig, channel_t *chan)
+int ic10_get_channel(RIG *rig, channel_t *chan, int read_only)
 {
     char membuf[16], infobuf[32];
     int retval, info_len, len;
@@ -715,6 +715,16 @@ int ic10_get_channel(RIG *rig, channel_t *chan)
 
             sscanf(infobuf + 6, "%011"SCNfreq, &chan->tx_freq);
         }
+    }
+
+    if (!read_only)
+    {
+        // Set rig to channel values
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: please contact hamlib mailing list to implement this\n", __func__);
+        rig_debug(RIG_DEBUG_ERR,
+                  "%s: need to know if rig updates when channel read or not\n", __func__);
+        return -RIG_ENIMPL;
     }
 
     return RIG_OK;
@@ -811,7 +821,7 @@ int ic10_set_channel(RIG *rig, const channel_t *chan)
         if (retval != RIG_OK)
         {
             rig_debug(RIG_DEBUG_ERR, "%s: transaction failed: %s\n", __func__,
-                      strerror(retval));
+                      rigerror(retval));
             return retval;
         }
     }

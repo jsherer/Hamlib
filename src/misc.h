@@ -84,10 +84,12 @@ extern int no_restore_ai;
 
 /* needs config.h included beforehand in .c file */
 #ifdef HAVE_INTTYPES_H
+// cppcheck-suppress *
 #  include <inttypes.h>
 #endif
 
 #ifdef HAVE_SYS_TIME_H
+// cppcheck-suppress *
 #  include <sys/time.h>
 #endif
 
@@ -99,6 +101,8 @@ extern HAMLIB_EXPORT(void) rig_force_cache_timeout(struct timeval *tv);
 extern HAMLIB_EXPORT(setting_t) rig_idx2setting(int i);
 
 extern HAMLIB_EXPORT(int) hl_usleep(useconds_t usec);
+
+extern HAMLIB_EXPORT(double) elapsed_ms(struct timespec *start, int start_flag);
 
 #ifdef PRId64
 /** \brief printf(3) format to be used for long long (64bits) type */

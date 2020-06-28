@@ -71,6 +71,7 @@
 #endif
 
 #include <hamlib/rig.h>
+#include "hamlibdatetime.h"
 #include "misc.h"
 #include "iofunc.h"
 #include "serial.h"
@@ -245,7 +246,6 @@ int main(int argc, char *argv[])
 
     struct addrinfo hints, *result, *saved_result;
     int sock_listen;
-    int sockopt;
     int reuseaddr = 1;
     int twiddle = 0;
     char host[NI_MAXHOST];
@@ -489,6 +489,7 @@ int main(int argc, char *argv[])
 
         case 'o':
             vfo_mode++;
+            rig_debug(RIG_DEBUG_ERR, "%s: #0 vfo_mode=%d\n", __func__, vfo_mode);
             break;
 
         case 'v':
@@ -535,7 +536,8 @@ int main(int argc, char *argv[])
 
     rig_set_debug(verbose);
 
-    rig_debug(RIG_DEBUG_VERBOSE, "rigctld, %s\n", hamlib_version);
+    rig_debug(RIG_DEBUG_VERBOSE, "rigctld %s\nLast commit was %s\n", hamlib_version,
+              HAMLIBDATETIME);
     rig_debug(RIG_DEBUG_VERBOSE, "%s",
               "Report bugs to <hamlib-developer@lists.sourceforge.net>\n\n");
 
@@ -669,9 +671,12 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    sockopt = SO_SYNCHRONOUS_NONALERT;
-    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, (char *)&sockopt,
-               sizeof(sockopt));
+    {
+        int sockopt = SO_SYNCHRONOUS_NONALERT;
+        setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, (char *)&sockopt,
+                   sizeof(sockopt));
+    }
+
 #endif
 
     /*
@@ -725,7 +730,7 @@ int main(int argc, char *argv[])
         {
             /* allow IPv4 mapped to IPv6 clients Windows and BSD default
                this to 1 (i.e. disallowed) and we prefer it off */
-            sockopt = 0;
+            int sockopt = 0;
 
             if (setsockopt(sock_listen,
                            IPPROTO_IPV6,
@@ -966,7 +971,8 @@ void *handle_socket(void *arg)
 
     if (!fsockin)
     {
-        rig_debug(RIG_DEBUG_ERR, "fdopen in: %s\n", strerror(errno));
+        rig_debug(RIG_DEBUG_ERR, "fdopen(0x%d) in: %s\n", handle_data_arg->sock,
+                  strerror(errno));
         goto handle_exit;
     }
 
@@ -1019,20 +1025,32 @@ void *handle_socket(void *arg)
 
     do
     {
+        rig_debug(RIG_DEBUG_TRACE, "%s: vfo_mode=%d\n", __func__,
+                  handle_data_arg->vfo_mode);
         retcode = rigctl_parse(handle_data_arg->rig, fsockin, fsockout, NULL, 0,
                                sync_callback,
-                               1, 0, handle_data_arg->vfo_mode, send_cmd_term, &ext_resp, &resp_sep);
+                               1, 0, &handle_data_arg->vfo_mode, send_cmd_term, &ext_resp, &resp_sep);
+
+        if (retcode != 0) { rig_debug(RIG_DEBUG_ERR, "%s: rigctl_parse retcode=%d\n", __func__, retcode); }
+
+        if (retcode == -1)
+        {
+            sleep(1);
+            continue;
+        }
 
         if (ferror(fsockin) || ferror(fsockout))
         {
-            retcode = 1;
-        }
+            rig_debug(RIG_DEBUG_ERR, "%s: socket error in=%d, out=%d\n", __func__,
+                      ferror(fsockin), ferror(fsockout));
 
-        if (retcode == 1)
-        {
+            retcode = rig_close(my_rig);
+            rig_debug(RIG_DEBUG_ERR, "%s: rig_close retcode=%d\n", __func__, retcode);
             retcode = rig_open(my_rig);
+            rig_debug(RIG_DEBUG_ERR, "%s: rig_open retcode=%d\n", __func__, retcode);
         }
     }
+
     while (retcode == 0 || retcode == 2 || retcode == -RIG_ENAVAIL);
 
 #ifdef HAVE_PTHREAD
